@@ -1,5 +1,7 @@
 package com.bignerdranch.android.geoquiz;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,8 +16,10 @@ public class QuizActivity extends AppCompatActivity {
 
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
+    private static final int REQUEST_CODE_CHEAT = 0;
     private Button mTrueButton;
     private Button mFalseButton;
+    private Button mCheatButton;
     private Button mPrevButton;
     private Button mNextButton;
     private TextView mQuestionTextView;
@@ -31,6 +35,7 @@ public class QuizActivity extends AppCompatActivity {
 
     private int mCurrentIndex = 0;
     private int mAnsweredQuestion = 0;
+    private boolean mIsCheater;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,13 +72,26 @@ public class QuizActivity extends AppCompatActivity {
             }
         });
 
+        mCheatButton = (Button) findViewById(R.id.cheat_button);
+        mCheatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Start CheatActivity
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                Intent intent = CheatActivity.newIntent(QuizActivity.this,
+                        answerIsTrue);
+                startActivityForResult(intent, REQUEST_CODE_CHEAT);
+            }
+        });
+
         mPrevButton = (Button) findViewById(R.id.prev_button);
         mPrevButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex - 1 + mQuestionBank.length) % mQuestionBank.length;
+                mIsCheater = false;
                 updateQuestion();
-                if (mQuestionBank[mCurrentIndex].isAnswered() == null) {
+                if (mQuestionBank[mCurrentIndex].isRightAnswered() == null) {
                     mTrueButton.setEnabled(true);
                     mFalseButton.setEnabled(true);
                 } else {
@@ -90,8 +108,9 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+                mIsCheater = false;
                 updateQuestion();
-                if (mQuestionBank[mCurrentIndex].isAnswered() == null) {
+                if (mQuestionBank[mCurrentIndex].isRightAnswered() == null) {
                     mTrueButton.setEnabled(true);
                     mFalseButton.setEnabled(true);
                 } else {
@@ -102,6 +121,19 @@ public class QuizActivity extends AppCompatActivity {
         });
 
         updateQuestion();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        if (requestCode == REQUEST_CODE_CHEAT) {
+            if (data == null){
+                return;
+            }
+            mIsCheater = CheatActivity.wasAnswerShown(data);
+        }
     }
 
     @Override
@@ -150,12 +182,13 @@ public class QuizActivity extends AppCompatActivity {
         boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
 
         int messageResID = 0;
+
         if (userPressedTrue == answerIsTrue) {
-            messageResID = R.string.correct_toast;
-            mQuestionBank[mCurrentIndex].setAnswered(true);
+            messageResID = mIsCheater ? R.string.judgment_toast : R.string.correct_toast;
+            mQuestionBank[mCurrentIndex].setRightAnswered(true);
         } else {
-            messageResID = R.string.incorrect_toast;
-            mQuestionBank[mCurrentIndex].setAnswered(false);
+            messageResID = mIsCheater ? R.string.judgment_toast : R.string.incorrect_toast;
+            mQuestionBank[mCurrentIndex].setRightAnswered(false);
         }
 
         Toast toast = Toast.makeText(this,
@@ -170,7 +203,7 @@ public class QuizActivity extends AppCompatActivity {
         if (mAnsweredQuestion == mQuestionBank.length) {
             int correctAnswer = 0;
             for (Question question : mQuestionBank) {
-                if (question.isAnswered())
+                if (question.isRightAnswered())
                     correctAnswer++;
             }
             Toast finalToast = Toast.makeText(this,

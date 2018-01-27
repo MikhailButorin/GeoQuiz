@@ -7,7 +7,7 @@ package com.bignerdranch.android.geoquiz;
 public class Question {
     private int mTextResID;
     private boolean mAnswerTrue;
-    private Boolean mAnswered = null;
+    private Boolean mRightAnswered = null;
 
     public Question(int textResId, boolean answerTrue) {
         mTextResID = textResId;
@@ -30,11 +30,11 @@ public class Question {
         mAnswerTrue = answerTrue;
     }
 
-    public Boolean isAnswered() {
-        return mAnswered;
+    public Boolean isRightAnswered() {
+        return mRightAnswered;
     }
 
-    public void setAnswered(Boolean answered) {
-        mAnswered = answered;
+    public void setRightAnswered(Boolean rightAnswered) {
+        mRightAnswered = rightAnswered;
     }
 }
